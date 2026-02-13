@@ -169,7 +169,6 @@ with st.sidebar:
     else:
         bucket_choice = []
 
-
 # ---------------------------------------------------
 # Apply filters
 # ---------------------------------------------------
@@ -206,6 +205,34 @@ if simplify:
     filtered = simplify_geometries(filtered, tolerance)
 
 # ---------------------------------------------------
+# JSON sanitization helper
+# ---------------------------------------------------
+
+def sanitize_for_json(gdf_in: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """
+    Ensure all attribute columns are JSON serializable:
+    - Convert datetime-like columns to ISO strings.
+    - Also convert individual pd.Timestamp values inside object columns.
+    """
+    gdf = gdf_in.copy()
+    for col in gdf.columns:
+        # Skip geometry; Folium handles via .to_json() geometry output
+        if col == "geometry":
+            continue
+
+        # Convert pandas datetime dtypes to string
+        if pd.api.types.is_datetime64_any_dtype(gdf[col]):
+            gdf[col] = gdf[col].astype(str)
+            continue
+
+        # For object columns, convert individual pd.Timestamp safely
+        if pd.api.types.is_object_dtype(gdf[col]):
+            gdf[col] = gdf[col].apply(
+                lambda x: x.isoformat() if isinstance(x, pd.Timestamp) else x
+            )
+    return gdf
+
+# ---------------------------------------------------
 # Map rendering
 # ---------------------------------------------------
 
@@ -223,13 +250,20 @@ pts = filtered[filtered.geometry.geom_type.isin(["Point", "MultiPoint"])]
 lines = filtered[filtered.geometry.geom_type.isin(["LineString", "MultiLineString"])]
 polys = filtered[filtered.geometry.geom_type.isin(["Polygon", "MultiPolygon"])]
 
+# Sanitize attributes for JSON serialization before passing to Folium
+pts = sanitize_for_json(pts)
+lines = sanitize_for_json(lines)
+polys = sanitize_for_json(polys)
+
 # Points layer
 if len(pts):
     mc = MarkerCluster(name="Projects (points)", disableClusteringAtZoom=7)
     for _, r in pts.iterrows():
         try:
+            if r.geometry is None:
+                continue
             lat, lon = r.geometry.y, r.geometry.x
-            popup_fields = {k: str(r[k]) for k in r.index if k != "geometry"}
+            popup_fields = {k: ("" if k == "geometry" else str(r[k])) for k in r.index}
             folium.Marker(
                 [lat, lon],
                 popup=folium.Popup(f"<pre>{json.dumps(popup_fields, indent=2)}</pre>", max_width=400),
@@ -262,7 +296,7 @@ if len(polys):
 
 # Heatmap
 if show_heatmap and len(pts):
-    heat_data = [[g.geometry.y, g.geometry.x] for _, g in pts.iterrows() if g.geometry]
+    heat_data = [[g.geometry.y, g.geometry.x] for _, g in pts.iterrows() if g.geometry is not None]
     if heat_data:
         HeatMap(heat_data, name="Density heatmap", radius=12, blur=15).add_to(m)
 
@@ -271,6 +305,7 @@ for ofile in selected_overlays:
     try:
         ogdf = gpd.read_file(ofile)
         ogdf = to_wgs84(ogdf)
+        ogdf = sanitize_for_json(ogdf)
         folium.GeoJson(
             ogdf.to_json(),
             name=f"Overlay: {Path(ofile).name}",
@@ -294,9 +329,11 @@ st.write(f"Total features loaded: **{len(gdf):,}** | After filters: **{len(filte
 with st.expander("Preview filtered attributes"):
     st.dataframe(filtered.drop(columns="geometry").head(100))
 
+# ---- Export (sanitize first) ----
+filtered_for_export = sanitize_for_json(filtered)
 st.download_button(
     "Download filtered as GeoJSON",
-    data=filtered.to_json(),
+    data=filtered_for_export.to_json(),
     file_name="gcdf_bri_filtered.geojson",
     mime="application/geo+json",
 )
