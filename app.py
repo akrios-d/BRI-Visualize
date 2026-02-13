@@ -143,18 +143,14 @@ with st.sidebar:
         v = auto_cols.get(name)
         return v if (isinstance(v, str) and v in gdf.columns) else "— None —"
 
-    col_country   = st.selectbox("Country column",   all_cols, index=all_cols.index(preselect("country")))
-    col_sector    = st.selectbox("Sector column",    all_cols, index=all_cols.index(preselect("sector")))
-    col_year      = st.selectbox("Year (or date) column", all_cols, index=all_cols.index(preselect("year")))
-    col_precision = st.selectbox("Geographic precision column", all_cols, index=all_cols.index(preselect("precision")))
-    col_value     = st.selectbox("Value/amount column", all_cols, index=all_cols.index(preselect("value")))
+    col_sector    = st.selectbox("Sector column",    all_cols, index=all_cols.index(preselect("Sector.Name")))
+    col_year      = st.selectbox("Year (or date) column", all_cols, index=all_cols.index(preselect("Commitment.Date")))
+    col_value     = st.selectbox("Value/amount column", all_cols, index=all_cols.index(preselect("Amount")))
 
     # Normalize "None" to None
     cols = {
-        "country":   None if col_country   == "— None —" else col_country,
         "sector":    None if col_sector    == "— None —" else col_sector,
         "year":      None if col_year      == "— None —" else col_year,
-        "precision": None if col_precision == "— None —" else col_precision,
         "value":     None if col_value     == "— None —" else col_value,
     }
 
@@ -164,13 +160,6 @@ with st.sidebar:
 
 with st.sidebar:
     st.header("Filters")
-
-    # Country filter
-    if cols["country"] and cols["country"] in gdf.columns:
-        countries = sorted(gdf[cols["country"]].dropna().astype(str).unique())
-        sel_countries = st.multiselect("Country", countries)
-    else:
-        sel_countries = []
 
     # Sector filter
     if cols["sector"] and cols["sector"] in gdf.columns:
@@ -226,13 +215,6 @@ with st.sidebar:
     else:
         year_range = None
 
-    # Precision filter
-    if cols["precision"] and cols["precision"] in gdf.columns:
-        prec_vals = sorted(gdf[cols["precision"]].dropna().astype(str).unique())
-        sel_prec = st.multiselect("Geographic precision", prec_vals)
-    else:
-        sel_prec = []
-
     # Value bucket
     if cols["value"] and cols["value"] in gdf.columns:
         bucket_choice = st.multiselect("Financing bucket", ["Low", "Medium", "High"])
@@ -245,18 +227,12 @@ with st.sidebar:
 
 filtered = gdf.copy()
 
-if sel_countries and cols["country"]:
-    filtered = filtered[filtered[cols["country"]].astype(str).isin(sel_countries)]
-
 if sel_sectors and cols["sector"]:
     filtered = filtered[filtered[cols["sector"]].astype(str).isin(sel_sectors)]
 
 if year_range and cols["year"]:
     yy = get_year_series(filtered[cols["year"]])
     filtered = filtered[(yy >= year_range[0]) & (yy <= year_range[1])]
-
-if sel_prec and cols["precision"]:
-    filtered = filtered[filtered[cols["precision"]].astype(str).isin(sel_prec)]
 
 if bucket_choice and cols["value"]:
     vs = pd.to_numeric(filtered[cols["value"]], errors="coerce")
