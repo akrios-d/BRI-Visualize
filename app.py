@@ -300,6 +300,14 @@ def sanitize_for_json(gdf_in: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 # ---------------------------------------------------
 
 with st.expander("🔎 Data diagnostics"):
+    st.write("**Detected columns (auto):**", auto_cols)
+    st.write("**Columns in use (after manual override):**", cols)
+    dtypes = {c: str(gdf[c].dtype) for c in gdf.columns if c != "geometry"}
+    st.write("**Attribute dtypes:**", dtypes)
+    if cols["year"] and cols["year"] in gdf.columns:
+        y_try = get_year_series(gdf[cols["year"]])
+        st.write("**First derived years (preview):**", y_try.dropna().astype(int).head(10).tolist())
+
 # ---------------------------------------------------
 # Map rendering
 # ---------------------------------------------------
@@ -330,7 +338,12 @@ if len(pts):
         try:
             if r.geometry is None:
                 continue
-            lat, lon = r.geometry.y, r.geometry.x
+            # If MultiPoint, representative point
+            if r.geometry.geom_type == "MultiPoint":
+                geom = list(r.geometry.geoms)[0]
+                lat, lon = geom.y, geom.x
+            else:
+                lat, lon = r.geometry.y, r.geometry.x
             popup_fields = {k: ("" if k == "geometry" else str(r[k])) for k in r.index}
             folium.Marker(
                 [lat, lon],
@@ -364,19 +377,42 @@ if len(polys):
 
 # Heatmap
 if show_heatmap and len(pts):
-    heat_data = [[g.geometry.y, g.geometry.x] for _, g in pts.iterrows() if g.geometry is not None]
+    heat_data = []
+    for _, g in pts.iterrows():
+        if g.geometry is None:
+            continue
+        if g.geometry.geom_type == "Point":
+            heat_data.append([g.geometry.y, g.geometry.x])
+        elif g.geometry.geom_type == "MultiPoint":
+            for p in g.geometry.geoms:
+                heat_data.append([p.y, p.x])
     if heat_data:
         HeatMap(heat_data, name="Density heatmap", radius=12, blur=15).add_to(m)
 
 # Overlays
+added_overlays = 0
 for ofile in selected_overlays:
     try:
-        ogdf = gpd.read_file(ofile)
+        # Read per file type
+        if ofile.suffix.lower() in [".geojson", ".json", ".shp"]:
+            ogdf = gpd.read_file(ofile)
+        elif ofile.suffix.lower() == ".gpkg":
+            # Read default/first layer
+            ogdf = gpd.read_file(ofile)
+        else:
+            st.toast(f"Unsupported overlay type: {ofile.name}", icon="⚠️")
+            continue
+
+        if ogdf.empty:
+            st.toast(f"Overlay {ofile.name} has no features.", icon="⚠️")
+            continue
+
         ogdf = to_wgs84(ogdf)
         ogdf = sanitize_for_json(ogdf)
+
         folium.GeoJson(
             ogdf.to_json(),
-            name=f"Overlay: {Path(ofile).name}",
+            name=f"Overlay: {ofile.name}",
             style_function=lambda x: {
                 "color": "#ff7f00",
                 "weight": 2,
@@ -384,12 +420,21 @@ for ofile in selected_overlays:
                 "fillOpacity": 0.1,
             },
         ).add_to(m)
+        added_overlays += 1
     except Exception as e:
-        st.toast(f"Failed to load overlay {ofile}: {e}", icon="⚠️")
+        st.toast(f"Failed to load overlay {ofile.name}: {e}", icon="⚠️")
 
 folium.LayerControl(collapsed=False).add_to(m)
 
 st_folium(m, width=None, height=700)
+
+# Small heads-up if overlays were selected but none got added
+if selected_overlays and added_overlays == 0:
+    st.warning("Overlay files were selected but none were added. Check diagnostics or file formats/CRS.")
+
+# ---------------------------------------------------
+# Summary + Preview + Export
+# ---------------------------------------------------
 
 st.subheader("Data Summary")
 st.write(f"Total features loaded: **{len(gdf):,}** | After filters: **{len(filtered):,}**")
