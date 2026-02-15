@@ -1,5 +1,4 @@
 *.pyc
 .DS_Store
-*.gpkg
 /venv
 app.log
