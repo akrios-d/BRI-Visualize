@@ -1,0 +1,40 @@
+<header class="app-shell">
+  <div class="brand-block">
+    <p class="brand-kicker">{{ i18n.t('app.kicker') }}</p>
+    <h1>{{ i18n.t('app.title') }}</h1>
+  </div>
+
+  <div class="lang-picker" [class.lang-picker--open]="langMenuOpen()">
+    <button
+      type="button"
+      class="lang-trigger"
+      (click)="toggleLangMenu()"
+      [attr.aria-label]="i18n.t('app.languageLabel')"
+      [attr.aria-expanded]="langMenuOpen()"
+    >
+      <app-flag [lang]="i18n.language()" />
+      <span class="lang-chevron" aria-hidden="true">›</span>
+    </button>
+
+    @if (langMenuOpen()) {
+      <button type="button" class="lang-backdrop" (click)="closeLangMenu()" tabindex="-1" aria-hidden="true"></button>
+      <div class="lang-dropdown" role="menu">
+        @for (option of i18n.languageOptions; track option.code) {
+          <button
+            type="button"
+            class="lang-option"
+            [class.lang-option--active]="i18n.language() === option.code"
+            (click)="pickLanguage(option.code)"
+            role="menuitem"
+          >
+            <app-flag [lang]="option.code" />
+          </button>
+        }
+      </div>
+    }
+  </div>
+</header>
+
+<main>
+  <router-outlet />
+</main>

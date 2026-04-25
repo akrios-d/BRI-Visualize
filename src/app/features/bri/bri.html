@@ -1,0 +1,115 @@
+<div class="bri-page">
+
+  <div class="bri-filters">
+
+    <!-- Sector -->
+    <div class="filter-group">
+      <label class="filter-label">{{ i18n.t('bri.filter.sectorLabel') }}</label>
+      <select [value]="selectedSector()" (change)="selectedSector.set($any($event.target).value)">
+        <option value="">{{ i18n.t('bri.filter.allSectors') }}</option>
+        @for (s of sectors(); track s) {
+          <option [value]="s">{{ s }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="filter-divider"></div>
+
+    <!-- Commitment Year -->
+    <div class="filter-group">
+      <label class="filter-label">{{ i18n.t('bri.filter.yearsLabel') }}</label>
+      <div class="year-range">
+        <input
+          type="number"
+          [value]="yearMin()"
+          (input)="yearMin.set(+$any($event.target).value)"
+          min="2000" max="2021"
+        />
+        <span class="year-sep">–</span>
+        <input
+          type="number"
+          [value]="yearMax()"
+          (input)="yearMax.set(+$any($event.target).value)"
+          min="2000" max="2021"
+        />
+      </div>
+    </div>
+
+    <div class="filter-divider"></div>
+
+    <!-- Amount range -->
+    <div class="filter-group">
+      <label class="filter-label">{{ i18n.t('bri.filter.amountLabel') }}</label>
+      <div class="amount-range">
+        <input
+          type="number"
+          [value]="amountMin()"
+          (input)="amountMin.set(+$any($event.target).value)"
+          min="0"
+          [max]="dataAmountMax()"
+          [placeholder]="'0'"
+          [disabled]="loading()"
+        />
+        <span class="year-sep">–</span>
+        <input
+          type="number"
+          [value]="amountMax()"
+          (input)="amountMax.set(+$any($event.target).value)"
+          min="0"
+          [max]="dataAmountMax()"
+          [placeholder]="dataAmountMax().toLocaleString()"
+          [disabled]="loading()"
+        />
+        <span class="amount-unit">M</span>
+      </div>
+    </div>
+
+    <div class="filter-divider"></div>
+
+    <!-- Status -->
+    <div class="filter-group">
+      <label class="filter-label">{{ i18n.t('bri.filter.statusLabel') }}</label>
+      <select [value]="selectedStatus()" (change)="selectedStatus.set($any($event.target).value)">
+        <option value="">{{ i18n.t('bri.filter.allStatuses') }}</option>
+        <option value="Completion">{{ i18n.t('bri.status.completion') }}</option>
+        <option value="Implementation">{{ i18n.t('bri.status.implementation') }}</option>
+        <option value="Pipeline: Commitment">{{ i18n.t('bri.status.pipeline') }}</option>
+      </select>
+    </div>
+
+    <!-- Actions -->
+    <div class="filter-actions">
+      @if (hasActiveFilters()) {
+        <button class="reset-btn" (click)="resetFilters()" [attr.title]="i18n.t('bri.filter.reset')">✕</button>
+      }
+      <button class="download-btn" (click)="downloadFiltered()" [disabled]="loading()">
+        ↓ {{ i18n.t('bri.download') }}
+      </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="bri-stats">
+      @if (loading()) {
+        <span class="stat-loading">{{ i18n.t('bri.loading') }}</span>
+      } @else {
+        <span class="stat-count">{{ filteredCount().toLocaleString() }}</span>
+        <span class="stat-label">{{ i18n.t('bri.projects') }}</span>
+        <span class="stat-sep">·</span>
+        <span class="stat-amount">{{ formatAmount(totalAmount()) }}</span>
+      }
+    </div>
+
+  </div>
+
+  <!-- Map -->
+  <div #mapContainer class="bri-map">
+    @if (!loading()) {
+      <div class="map-legend">
+        <span class="legend-dot" style="background:#4a8fc2"></span>{{ i18n.t('bri.bucket.low') }}
+        <span class="legend-dot" style="background:#e08a3c"></span>{{ i18n.t('bri.bucket.medium') }}
+        <span class="legend-dot" style="background:#c13b2a"></span>{{ i18n.t('bri.bucket.high') }}
+      </div>
+    }
+  </div>
+
+</div>

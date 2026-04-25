@@ -1,62 +1,48 @@
+# BRI Visualize
 
-# GCDF–BRI Local Map App
+A web app to explore **AidData's Geospatial Global Chinese Development Finance (GeoGCDF v3)** dataset — 9,405 projects across 148 countries from 2000 to 2021.
 
-A lightweight **local** Streamlit app to explore **AidData's Geospatial Global Chinese Development Finance (GeoGCDF v3)** dataset on your PC. It reads a **GeoPackage (.gpkg)** or a **folder of GeoJSONs** and renders:
+Built with Angular 21, Leaflet, and Vercel. Available in English and Chinese (中文).
 
-- An **interactive global map** (Folium/Leaflet) with filters (country, sector, year, precision, financing bucket)
-- **Analytical overlays**: density heatmap (by points), optional custom overlays (e.g., BRI corridors, IMEC, Global Gateway)
-- Export of **filtered subset** to GeoJSON
+## Getting started
 
-> The dataset contains geospatial features for 9,405 projects across 148 countries, including 6,266 precisely mapped roads, rail, energy lines, and buildings (>$830B) — see AidData docs. 
-
-## 1) Install (recommended: Conda/Mamba)
 ```bash
-# Create environment
-mamba env create -f environment.yml  # or: conda env create -f environment.yml
-conda activate gcdf-bri
-
-# Run
-streamlit run app.py
+npm install
+npm start        # http://localhost:4200
 ```
 
-### Alternative: pip (may require system GDAL/PROJ)
-```bash
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scriptsctivate
-pip install -r requirements.txt
-streamlit run app.py
+## Deploy (Vercel)
+
+Push to your repo — `vercel.json` handles SPA routing automatically. No backend required.
+
+## Features
+
+- Interactive global map (Leaflet) with canvas rendering for performance
+- Filters: sector, year range, financing level (Low / Medium / High)
+- Download filtered subset as GeoJSON
+- EN / ZH language switching
+
+## Project structure
+
+```
+src/
+  app/
+    core/i18n/          ← i18n service (EN + ZH, signal-based)
+    shared/components/  ← Flag component
+    features/bri/       ← map page (bri.page.ts + bri.service.ts)
+  styles.css            ← design tokens
+public/
+  i18n/en.json
+  i18n/zh.json
+  data/gcdf_light_simplified.geojson   ← 4.1MB, 9,405 point features
 ```
 
-## 2) Prepare Data
-- Place the **GeoPackage** in `./data/` (e.g., `geogcdf_v3.gpkg`), **or** keep a folder of per-project **GeoJSONs** under `./data/geojsons/`.
-- Optionally drop overlay files (e.g., **BRI corridors**, **IMEC**, **Global Gateway**) as GeoJSON into `./overlays/`.
+## Data
 
-## 3) Usage Notes
-- Use the sidebar to select the data source, filters, and overlays.
-- Large datasets: enable *geometry simplification* and *tiling by type* in the sidebar.
-- Export the filtered data via the **Download** button.
+`public/data/gcdf_light_simplified.geojson` is derived from AidData's GeoGCDF v3 dataset. Polygon geometries were converted to centroids for web performance. Original data files (`.gpkg`, full GeoJSONs) remain in `data/` for reference.
 
-## 4) Folder Structure
-```
-gcdf_bri_app/
-  app.py                # Streamlit app
-  utils.py              # Helper functions
-  environment.yml       # Conda environment
-  requirements.txt      # pip fallback
-  data/                 # Put your .gpkg or geojson folder here
-  overlays/             # Optional overlay layers (corridors, etc.)
-  assets/               # Icons, logos (optional)
-  README.md
-```
+## Data sources
 
-## 5) Data Sources & Context
-- GeoGCDF v3 GitHub repository and documentation.
-- AidData blog on the GeoGCDF v3 release (context and scope).
-- Scientific Data open-access article describing methods and coverage.
-
-## 6) Troubleshooting
-- If GeoPandas fails to install via pip, use **Conda/Mamba**. The `environment.yml` pins compatible `gdal`, `geopandas`, and `pyogrio`.
-- If the map is slow, enable *simplify geometries* and filter by region/years.
-
----
-Made for local, offline exploration.
+- [AidData GeoGCDF v3](https://www.aiddata.org/data/geocoded-chinese-global-official-finance-dataset-version-3-0)
+- AidData blog on the GeoGCDF v3 release
+- Scientific Data open-access article describing methods and coverage
