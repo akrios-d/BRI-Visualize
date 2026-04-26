@@ -1,26 +1,22 @@
 import { Injectable } from '@angular/core';
+import type { Feature, Point, FeatureCollection } from 'geojson';
 
 export interface BriProperties {
-  id: number;
-  Recipient: string;
-  'Recipient.ISO-3': string;
-  Title: string;
-  'Amount.(Constant.USD.2021)': number;
-  Status: string;
-  'Sector.Name': string;
-  'Commitment.Year': number;
+  id: number | null;
+  title: string | null;
+  recipient: string | null;
+  iso3: string | null;
+  sector: string | null;
+  status: string | null;
+  infrastructure: string | null;   // 'Yes' | null
+  year: number | null;
+  completionYear: number | null;
+  implYear: number | null;
+  amount: number | null;           // raw USD
 }
 
-export interface BriFeature {
-  type: 'Feature';
-  geometry: { type: 'Point'; coordinates: [number, number] };
-  properties: BriProperties;
-}
-
-export interface BriCollection {
-  type: 'FeatureCollection';
-  features: BriFeature[];
-}
+export type BriFeature = Feature<Point, BriProperties>;
+export type BriCollection = FeatureCollection<Point, BriProperties>;
 
 @Injectable({ providedIn: 'root' })
 export class BriService {
@@ -28,7 +24,7 @@ export class BriService {
 
   async loadData(): Promise<BriCollection> {
     if (this.cache) return this.cache;
-    const res = await fetch('/data/gcdf_light_simplified.geojson');
+    const res = await fetch('/data/centroids.json');
     this.cache = (await res.json()) as BriCollection;
     return this.cache;
   }

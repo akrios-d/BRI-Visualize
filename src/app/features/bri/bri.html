@@ -1,107 +1,198 @@
 <div class="bri-page">
 
-  <div class="bri-filters">
+  <!-- ── Sidebar ── -->
+  <aside class="bri-sidebar">
 
-    <!-- Sector -->
-    <div class="filter-group">
-      <label class="filter-label">{{ i18n.t('bri.filter.sectorLabel') }}</label>
-      <select [value]="selectedSector()" (change)="selectedSector.set($any($event.target).value)">
-        <option value="">{{ i18n.t('bri.filter.allSectors') }}</option>
-        @for (s of sectors(); track s) {
-          <option [value]="s">{{ s }}</option>
-        }
-      </select>
-    </div>
-
-    <div class="filter-divider"></div>
-
-    <!-- Commitment Year -->
-    <div class="filter-group">
-      <label class="filter-label">{{ i18n.t('bri.filter.yearsLabel') }}</label>
-      <div class="year-range">
-        <input
-          type="number"
-          [value]="yearMin()"
-          (input)="yearMin.set(+$any($event.target).value)"
-          min="2000" max="2021"
-        />
-        <span class="year-sep">–</span>
-        <input
-          type="number"
-          [value]="yearMax()"
-          (input)="yearMax.set(+$any($event.target).value)"
-          min="2000" max="2021"
-        />
-      </div>
-    </div>
-
-    <div class="filter-divider"></div>
-
-    <!-- Amount range -->
-    <div class="filter-group">
-      <label class="filter-label">{{ i18n.t('bri.filter.amountLabel') }}</label>
-      <div class="amount-range">
-        <input
-          type="number"
-          [value]="amountMin()"
-          (input)="amountMin.set(+$any($event.target).value)"
-          min="0"
-          [max]="dataAmountMax()"
-          [placeholder]="'0'"
-          [disabled]="loading()"
-        />
-        <span class="year-sep">–</span>
-        <input
-          type="number"
-          [value]="amountMax()"
-          (input)="amountMax.set(+$any($event.target).value)"
-          min="0"
-          [max]="dataAmountMax()"
-          [placeholder]="dataAmountMax().toLocaleString()"
-          [disabled]="loading()"
-        />
-        <span class="amount-unit">M</span>
-      </div>
-    </div>
-
-    <div class="filter-divider"></div>
-
-    <!-- Status -->
-    <div class="filter-group">
-      <label class="filter-label">{{ i18n.t('bri.filter.statusLabel') }}</label>
-      <select [value]="selectedStatus()" (change)="selectedStatus.set($any($event.target).value)">
-        <option value="">{{ i18n.t('bri.filter.allStatuses') }}</option>
-        <option value="Completion">{{ i18n.t('bri.status.completion') }}</option>
-        <option value="Implementation">{{ i18n.t('bri.status.implementation') }}</option>
-        <option value="Pipeline: Commitment">{{ i18n.t('bri.status.pipeline') }}</option>
-      </select>
-    </div>
-
-    <!-- Actions -->
-    <div class="filter-actions">
+    <div class="sidebar-header">
+      <span class="sidebar-title">{{ i18n.t('bri.filter.title') }}</span>
       @if (hasActiveFilters()) {
-        <button class="reset-btn" (click)="resetFilters()" [attr.title]="i18n.t('bri.filter.reset')">✕</button>
+        <button class="reset-btn" (click)="resetFilters()" [title]="i18n.t('bri.filter.reset')">↺</button>
       }
-      <button class="download-btn" (click)="downloadFiltered()" [disabled]="loading()">
-        ↓ {{ i18n.t('bri.download') }}
-      </button>
     </div>
 
     <!-- Stats -->
-    <div class="bri-stats">
+    <div class="sidebar-stats">
       @if (loading()) {
         <span class="stat-loading">{{ i18n.t('bri.loading') }}</span>
       } @else {
-        <span class="stat-count">{{ filteredCount().toLocaleString() }}</span>
-        <span class="stat-label">{{ i18n.t('bri.projects') }}</span>
-        <span class="stat-sep">·</span>
-        <span class="stat-amount">{{ formatAmount(totalAmount()) }}</span>
+        <div class="stat-box">
+          <div class="stat-box-label">{{ i18n.t('bri.stats.visible') }}</div>
+          <div class="stat-box-value accent">{{ filteredCount().toLocaleString() }}</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-label">{{ i18n.t('bri.stats.total') }}</div>
+          <div class="stat-box-value dim">{{ totalCount().toLocaleString() }}</div>
+        </div>
       }
     </div>
 
-  </div>
+    @if (!loading()) {
 
-  <!-- Map -->
+      <!-- Sector -->
+      <div class="filter-section">
+        <div class="filter-section-label">{{ i18n.t('bri.filter.sectorLabel') }}</div>
+        <select [value]="selectedSector()" (change)="selectedSector.set($any($event.target).value)">
+          <option value="">{{ i18n.t('bri.filter.allSectors') }}</option>
+          @for (s of sectors(); track s) {
+            <option [value]="s">{{ s }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Recipient Country -->
+      <div class="filter-section">
+        <div class="filter-section-label">{{ i18n.t('bri.filter.countryLabel') }}</div>
+        <select [value]="selectedCountry()" (change)="selectedCountry.set($any($event.target).value)">
+          <option value="">{{ i18n.t('bri.filter.allCountries') }}</option>
+          @for (c of countries(); track c) {
+            <option [value]="c">{{ c }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Status -->
+      <div class="filter-section">
+        <div class="filter-section-label">{{ i18n.t('bri.filter.statusLabel') }}</div>
+        <select [value]="selectedStatus()" (change)="selectedStatus.set($any($event.target).value)">
+          <option value="">{{ i18n.t('bri.filter.allStatuses') }}</option>
+          <option value="Completion">{{ i18n.t('bri.status.completion') }}</option>
+          <option value="Implementation">{{ i18n.t('bri.status.implementation') }}</option>
+          <option value="Pipeline: Commitment">{{ i18n.t('bri.status.pipeline') }}</option>
+        </select>
+      </div>
+
+      <!-- Infrastructure -->
+      <div class="filter-section">
+        <div class="filter-section-label">{{ i18n.t('bri.filter.infrastructureLabel') }}</div>
+        <label class="checkbox-row">
+          <input type="checkbox" [checked]="infrastructureOnly()"
+            (change)="infrastructureOnly.set($any($event.target).checked)">
+          <span>{{ i18n.t('bri.filter.infrastructureOnly') }}</span>
+        </label>
+      </div>
+
+      <!-- Commitment Year -->
+      <div class="filter-section">
+        <div class="filter-section-label">{{ i18n.t('bri.filter.commitYearLabel') }}</div>
+        <div class="range-values">
+          <span>{{ commitYearMin() }}</span>
+          <span class="range-dash">—</span>
+          <span>{{ commitYearMax() }}</span>
+        </div>
+        <div class="dual-range">
+          <div class="dual-range-track">
+            <div class="dual-range-fill"
+              [style.left.%]="pct(commitYearMin(), dataCommitYearMin(), dataCommitYearMax())"
+              [style.width.%]="pct(commitYearMax(), dataCommitYearMin(), dataCommitYearMax()) - pct(commitYearMin(), dataCommitYearMin(), dataCommitYearMax())">
+            </div>
+          </div>
+          <input type="range" [min]="dataCommitYearMin()" [max]="dataCommitYearMax()" step="1"
+            [value]="commitYearMin()"
+            (input)="commitYearMin.set(Math.min(+$any($event.target).value, commitYearMax() - 1))">
+          <input type="range" [min]="dataCommitYearMin()" [max]="dataCommitYearMax()" step="1"
+            [value]="commitYearMax()"
+            (input)="commitYearMax.set(Math.max(+$any($event.target).value, commitYearMin() + 1))">
+        </div>
+      </div>
+
+      <!-- Completion Year -->
+      <div class="filter-section">
+        <div class="filter-section-label">{{ i18n.t('bri.filter.completionYearLabel') }}</div>
+        <div class="range-values">
+          <span>{{ completionYearMin() }}</span>
+          <span class="range-dash">—</span>
+          <span>{{ completionYearMax() }}</span>
+        </div>
+        <div class="dual-range">
+          <div class="dual-range-track">
+            <div class="dual-range-fill"
+              [style.left.%]="pct(completionYearMin(), dataCompletionYearMin(), dataCompletionYearMax())"
+              [style.width.%]="pct(completionYearMax(), dataCompletionYearMin(), dataCompletionYearMax()) - pct(completionYearMin(), dataCompletionYearMin(), dataCompletionYearMax())">
+            </div>
+          </div>
+          <input type="range" [min]="dataCompletionYearMin()" [max]="dataCompletionYearMax()" step="1"
+            [value]="completionYearMin()"
+            (input)="completionYearMin.set(Math.min(+$any($event.target).value, completionYearMax() - 1))">
+          <input type="range" [min]="dataCompletionYearMin()" [max]="dataCompletionYearMax()" step="1"
+            [value]="completionYearMax()"
+            (input)="completionYearMax.set(Math.max(+$any($event.target).value, completionYearMin() + 1))">
+        </div>
+        <label class="checkbox-row checkbox-row--sm">
+          <input type="checkbox" [checked]="includeNullCompletionYear()"
+            (change)="includeNullCompletionYear.set($any($event.target).checked)">
+          <span>{{ i18n.t('bri.filter.includeNoYear') }} ({{ nullCompletionYearCount() }})</span>
+        </label>
+      </div>
+
+      <!-- Implementation Start Year -->
+      <div class="filter-section">
+        <div class="filter-section-label">{{ i18n.t('bri.filter.implYearLabel') }}</div>
+        <div class="range-values">
+          <span>{{ implYearMin() }}</span>
+          <span class="range-dash">—</span>
+          <span>{{ implYearMax() }}</span>
+        </div>
+        <div class="dual-range">
+          <div class="dual-range-track">
+            <div class="dual-range-fill"
+              [style.left.%]="pct(implYearMin(), dataImplYearMin(), dataImplYearMax())"
+              [style.width.%]="pct(implYearMax(), dataImplYearMin(), dataImplYearMax()) - pct(implYearMin(), dataImplYearMin(), dataImplYearMax())">
+            </div>
+          </div>
+          <input type="range" [min]="dataImplYearMin()" [max]="dataImplYearMax()" step="1"
+            [value]="implYearMin()"
+            (input)="implYearMin.set(Math.min(+$any($event.target).value, implYearMax() - 1))">
+          <input type="range" [min]="dataImplYearMin()" [max]="dataImplYearMax()" step="1"
+            [value]="implYearMax()"
+            (input)="implYearMax.set(Math.max(+$any($event.target).value, implYearMin() + 1))">
+        </div>
+        <label class="checkbox-row checkbox-row--sm">
+          <input type="checkbox" [checked]="includeNullImplYear()"
+            (change)="includeNullImplYear.set($any($event.target).checked)">
+          <span>{{ i18n.t('bri.filter.includeNoYear') }} ({{ nullImplYearCount() }})</span>
+        </label>
+      </div>
+
+      <!-- Amount -->
+      <div class="filter-section">
+        <div class="filter-section-label">{{ i18n.t('bri.filter.amountLabel') }}</div>
+        <div class="range-values">
+          <span>{{ formatAmount(amountMin() * 1e6) }}</span>
+          <span class="range-dash">—</span>
+          <span>{{ formatAmount(amountMax() * 1e6) }}</span>
+        </div>
+        <div class="dual-range">
+          <div class="dual-range-track">
+            <div class="dual-range-fill"
+              [style.left.%]="pct(amountMin(), 0, dataAmountMax())"
+              [style.width.%]="pct(amountMax(), 0, dataAmountMax()) - pct(amountMin(), 0, dataAmountMax())">
+            </div>
+          </div>
+          <input type="range" min="0" [max]="dataAmountMax()" step="1"
+            [value]="amountMin()"
+            (input)="amountMin.set(Math.min(+$any($event.target).value, amountMax() - 1))">
+          <input type="range" min="0" [max]="dataAmountMax()" step="1"
+            [value]="amountMax()"
+            (input)="amountMax.set(Math.max(+$any($event.target).value, amountMin() + 1))">
+        </div>
+        <label class="checkbox-row checkbox-row--sm">
+          <input type="checkbox" [checked]="includeNullAmount()"
+            (change)="includeNullAmount.set($any($event.target).checked)">
+          <span>{{ i18n.t('bri.filter.includeNoAmount') }} ({{ nullAmountCount() }})</span>
+        </label>
+      </div>
+
+      <!-- Footer -->
+      <div class="sidebar-footer">
+        <button class="download-btn" (click)="downloadFiltered()">
+          ↓ {{ i18n.t('bri.download') }}
+        </button>
+      </div>
+
+    }
+  </aside>
+
+  <!-- ── Map ── -->
   <div #mapContainer class="bri-map">
     @if (!loading()) {
       <div class="map-legend">
