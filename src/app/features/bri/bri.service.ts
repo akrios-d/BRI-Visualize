@@ -8,24 +8,31 @@ export interface BriProperties {
   iso3: string | null;
   sector: string | null;
   status: string | null;
-  infrastructure: string | null;   // 'Yes' | null
+  infrastructure: string | null;
   year: number | null;
   completionYear: number | null;
   implYear: number | null;
-  amount: number | null;           // raw USD
+  amount: number | null;
+  dissertationTheme?: string;
 }
 
 export type BriFeature = Feature<Point, BriProperties>;
 export type BriCollection = FeatureCollection<Point, BriProperties>;
+export type DatasetMode = 'full' | 'dissertation';
 
 @Injectable({ providedIn: 'root' })
 export class BriService {
-  private cache: BriCollection | null = null;
+  private cache: Record<DatasetMode, BriCollection | null> = { full: null, dissertation: null };
 
-  async loadData(): Promise<BriCollection> {
-    if (this.cache) return this.cache;
-    const res = await fetch('/data/centroids.json');
-    this.cache = (await res.json()) as BriCollection;
-    return this.cache;
+  private readonly urls: Record<DatasetMode, string> = {
+    full:         '/data/centroids.json',
+    dissertation: '/data/dissertation.json',
+  };
+
+  async loadData(mode: DatasetMode): Promise<BriCollection> {
+    if (this.cache[mode]) return this.cache[mode]!;
+    const res = await fetch(this.urls[mode]);
+    this.cache[mode] = (await res.json()) as BriCollection;
+    return this.cache[mode]!;
   }
 }

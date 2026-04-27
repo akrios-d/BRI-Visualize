@@ -10,7 +10,7 @@ import {
   signal,
 } from '@angular/core';
 import { I18nService } from '../../core/i18n/i18n.service';
-import { BriFeature, BriService } from './bri.service';
+import { BriFeature, BriService, DatasetMode } from './bri.service';
 import * as L from 'leaflet';
 
 const BUCKET_COLORS = {
@@ -37,6 +37,9 @@ export class BriPage implements AfterViewInit, OnDestroy {
   readonly loading = signal(true);
   readonly allFeatures = signal<BriFeature[]>([]);
   readonly totalCount = computed(() => this.allFeatures().length);
+
+  // Dataset mode
+  readonly datasetMode = signal<DatasetMode>('full');
 
   // Sector
   readonly selectedSector = signal('');
@@ -86,7 +89,7 @@ export class BriPage implements AfterViewInit, OnDestroy {
   );
   readonly includeNullImplYear = signal(true);
 
-  // Amount (stored in USD millions for slider, ×1e6 for filtering)
+  // Amount (millions USD for slider)
   readonly dataAmountMax = signal(0);
   readonly amountMin = signal(0);
   readonly amountMax = signal(0);
@@ -95,14 +98,13 @@ export class BriPage implements AfterViewInit, OnDestroy {
   );
   readonly includeNullAmount = signal(true);
 
-  // Bucket thresholds (visual color coding only)
   private p33 = 0;
   private p66 = 0;
 
   private readonly filtered = computed(() => {
-    const sector   = this.selectedSector();
-    const country  = this.selectedCountry();
-    const status   = this.selectedStatus();
+    const sector    = this.selectedSector();
+    const country   = this.selectedCountry();
+    const status    = this.selectedStatus();
     const infraOnly = this.infrastructureOnly();
 
     const cyMin = this.commitYearMin(),   cyMax = this.commitYearMax();
@@ -127,9 +129,9 @@ export class BriPage implements AfterViewInit, OnDestroy {
 
     return this.allFeatures().filter(f => {
       const p = f.properties;
-      if (sector   && p.sector    !== sector)   return false;
-      if (country  && p.recipient !== country)  return false;
-      if (status   && p.status    !== status)   return false;
+      if (sector    && p.sector    !== sector)    return false;
+      if (country   && p.recipient !== country)   return false;
+      if (status    && p.status    !== status)     return false;
       if (infraOnly && p.infrastructure !== 'Yes') return false;
 
       if (p.year == null) { if (!inclNullCY) return false; }
@@ -190,13 +192,21 @@ export class BriPage implements AfterViewInit, OnDestroy {
       maxZoom: 18,
     }).addTo(this.map);
     this.markersLayer = L.layerGroup().addTo(this.map);
-    void this.loadData();
+    void this.loadData('full');
   }
 
   ngOnDestroy(): void {
     this.map?.remove();
     this.map = null;
     this.markersLayer = null;
+  }
+
+  async switchDataset(mode: DatasetMode): Promise<void> {
+    if (mode === this.datasetMode()) return;
+    this.loading.set(true);
+    this.resetFilters();
+    this.datasetMode.set(mode);
+    await this.loadData(mode);
   }
 
   resetFilters(): void {
@@ -245,8 +255,8 @@ export class BriPage implements AfterViewInit, OnDestroy {
     return BUCKET_COLORS.High;
   }
 
-  private async loadData(): Promise<void> {
-    const data = await this.briService.loadData();
+  private async loadData(mode: DatasetMode): Promise<void> {
+    const data = await this.briService.loadData(mode);
     const feats = data.features;
 
     const commitYears = feats.map(f => f.properties.year).filter((y): y is number => y != null);
@@ -254,23 +264,28 @@ export class BriPage implements AfterViewInit, OnDestroy {
     const implYears   = feats.map(f => f.properties.implYear).filter((y): y is number => y != null);
     const amounts     = feats.map(f => f.properties.amount).filter((a): a is number => a != null).sort((a, b) => a - b);
 
-    const cyMin = Math.min(...commitYears), cyMax = Math.max(...commitYears);
-    this.dataCommitYearMin.set(cyMin); this.commitYearMin.set(cyMin);
-    this.dataCommitYearMax.set(cyMax); this.commitYearMax.set(cyMax);
-
-    const cpyMin = Math.min(...compYears), cpyMax = Math.max(...compYears);
-    this.dataCompletionYearMin.set(cpyMin); this.completionYearMin.set(cpyMin);
-    this.dataCompletionYearMax.set(cpyMax); this.completionYearMax.set(cpyMax);
-
-    const iyMin = Math.min(...implYears), iyMax = Math.max(...implYears);
-    this.dataImplYearMin.set(iyMin); this.implYearMin.set(iyMin);
-    this.dataImplYearMax.set(iyMax); this.implYearMax.set(iyMax);
-
-    this.p33 = amounts[Math.floor(amounts.length * 0.33)];
-    this.p66 = amounts[Math.floor(amounts.length * 0.66)];
-    const maxM = Math.ceil(amounts[amounts.length - 1] / 1e6);
-    this.dataAmountMax.set(maxM);
-    this.amountMax.set(maxM);
+    if (commitYears.length) {
+      const cyMin = Math.min(...commitYears), cyMax = Math.max(...commitYears);
+      this.dataCommitYearMin.set(cyMin); this.commitYearMin.set(cyMin);
+      this.dataCommitYearMax.set(cyMax); this.commitYearMax.set(cyMax);
+    }
+    if (compYears.length) {
+      const cpyMin = Math.min(...compYears), cpyMax = Math.max(...compYears);
+      this.dataCompletionYearMin.set(cpyMin); this.completionYearMin.set(cpyMin);
+      this.dataCompletionYearMax.set(cpyMax); this.completionYearMax.set(cpyMax);
+    }
+    if (implYears.length) {
+      const iyMin = Math.min(...implYears), iyMax = Math.max(...implYears);
+      this.dataImplYearMin.set(iyMin); this.implYearMin.set(iyMin);
+      this.dataImplYearMax.set(iyMax); this.implYearMax.set(iyMax);
+    }
+    if (amounts.length) {
+      this.p33 = amounts[Math.floor(amounts.length * 0.33)];
+      this.p66 = amounts[Math.floor(amounts.length * 0.66)];
+      const maxM = Math.ceil(amounts[amounts.length - 1] / 1e6);
+      this.dataAmountMax.set(maxM);
+      this.amountMax.set(maxM);
+    }
 
     this.allFeatures.set(feats);
     this.loading.set(false);
@@ -297,6 +312,7 @@ export class BriPage implements AfterViewInit, OnDestroy {
         const amt = p.amount;
         const color = this.getBucketColor(amt ?? 0);
         const statusClass = (p.status ?? '').toLowerCase().replace(/[^a-z]/g, '-');
+        const theme = p.dissertationTheme ? `<div class="popup-theme">${p.dissertationTheme}</div>` : '';
         lyr.bindPopup(
           `<div class="bri-popup">
             <div class="popup-title">${p.title ?? '—'}</div>
@@ -306,6 +322,7 @@ export class BriPage implements AfterViewInit, OnDestroy {
               <span>${p.year ?? '—'}</span>
             </div>
             <div class="popup-sector">${p.sector ?? '—'}</div>
+            ${theme}
             <div class="popup-row">
               <span class="popup-status popup-status--${statusClass}">${p.status ?? '—'}</span>
               <span class="popup-amount" style="color:${color}">${amt != null ? '$' + Math.round(amt).toLocaleString() : '—'}</span>

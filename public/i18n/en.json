@@ -30,5 +30,8 @@
   "bri.status.pipeline": "Pipeline",
   "bri.bucket.low": "Low",
   "bri.bucket.medium": "Medium",
-  "bri.bucket.high": "High"
+  "bri.bucket.high": "High",
+  "bri.dataset.full": "Full Dataset",
+  "bri.dataset.dissertation": "Dissertation Focus",
+  "bri.dataset.dissertationInfo": "ICT / Huawei 5G · Nuclear Energy · Pacific Geopolitics (755 projects)"
 }

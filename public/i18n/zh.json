@@ -30,5 +30,8 @@
   "bri.status.pipeline": "计划中",
   "bri.bucket.low": "低",
   "bri.bucket.medium": "中",
-  "bri.bucket.high": "高"
+  "bri.bucket.high": "高",
+  "bri.dataset.full": "完整数据集",
+  "bri.dataset.dissertation": "论文重点",
+  "bri.dataset.dissertationInfo": "ICT / 华为5G · 核能 · 太平洋地缘政治（755个项目）"
 }

@@ -3,6 +3,28 @@
   <!-- ── Sidebar ── -->
   <aside class="bri-sidebar">
 
+    <!-- Dataset toggle -->
+    <div class="dataset-toggle">
+      <button
+        class="dataset-btn"
+        [class.active]="datasetMode() === 'full'"
+        (click)="switchDataset('full')">
+        {{ i18n.t('bri.dataset.full') }}
+      </button>
+      <button
+        class="dataset-btn"
+        [class.active]="datasetMode() === 'dissertation'"
+        (click)="switchDataset('dissertation')">
+        {{ i18n.t('bri.dataset.dissertation') }}
+      </button>
+    </div>
+
+    @if (datasetMode() === 'dissertation') {
+      <div class="dataset-info">
+        {{ i18n.t('bri.dataset.dissertationInfo') }}
+      </div>
+    }
+
     <div class="sidebar-header">
       <span class="sidebar-title">{{ i18n.t('bri.filter.title') }}</span>
       @if (hasActiveFilters()) {
